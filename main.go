@@ -9,6 +9,9 @@ import (
 	"log"
 	"time"
 
+	"os"
+	"encoding/base64"
+
 	dtrack "github.com/DependencyTrack/client-go" 
 )
 
@@ -30,10 +33,7 @@ func main() {
 }
 
 func run() error {
-    
-	
-
-
+ 
 
 client, _ := dtrack.NewClient(cfg.URL, dtrack.WithAPIKey(cfg.APIKEY))
 
