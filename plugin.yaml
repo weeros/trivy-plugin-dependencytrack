@@ -1,0 +1,27 @@
+name: dependencytrack
+repository: github.com/weeros/trivy-plugin-dependencytrack
+version: "0.2.1"
+usage: Template
+description: |-
+  A plugin template
+platforms:
+  - selector:
+      os: darwin
+      arch: amd64
+    uri: https://github.com/weeros/trivy-plugin-dependencytrack/releases/download/v0.2.1/trivy-plugin-dependencytrack_0.2.1_darwin-amd64.tar.gz
+    bin: ./dependencytrack
+  - selector:
+      os: darwin
+      arch: arm64
+    uri: https://github.com/weeros/trivy-plugin-dependencytrack/releases/download/v0.2.1/trivy-plugin-dependencytrack_0.2.1_darwin-arm64.tar.gz
+    bin: ./dependencytrack
+  - selector:
+      os: linux
+      arch: amd64
+    uri: https://github.com/weeros/trivy-plugin-dependencytrack/releases/download/v0.2.1/trivy-plugin-dependencytrack_0.2.1_linux-amd64.tar.gz
+    bin: ./dependencytrack
+  - selector:
+      os: linux
+      arch: arm64
+    uri: https://github.com/weeros/trivy-plugin-dependencytrack/releases/download/v0.2.1/trivy-plugin-dependencytrack_0.2.1_linux-arm64.tar.gz
+    bin: ./dependencytrack
