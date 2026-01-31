@@ -13,3 +13,14 @@ trivy plugin install github.com/weeros/trivy-plugin-dependencytrack
 ```shell
 trivy dependencytrack
 ```
+
+
+## Devlopments
+
+```
+go get -u
+```
+
+```
+GOPROXY=https://proxy.golang.org go mod tidy
+````
