@@ -1,0 +1,124 @@
+package cmd
+
+import (
+    "github.com/weeros/trivy-plugin-dependencytrack/cmd/common"
+    "github.com/weeros/trivy-plugin-dependencytrack/pkg/logger"
+	"os"
+	"strings"
+
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	"log/slog"
+)
+
+var rootCmd = NewRootCommand()
+
+func NewRootCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:               "trivy-plugin-dependencytrack [command]",
+		Short:             "DependencyTrack plugin for Trivy",
+		Long:              `The DependencyTrack plugin for Trivy pushes SBOMs in DependencyTrack Server.`,
+		Args:              cobra.MaximumNArgs(1),
+		SilenceUsage:      false,
+		SilenceErrors:     false,
+		PersistentPreRunE: preRun,
+	}
+
+	cmd.AddCommand(NewUploadCommand())
+
+	return cmd
+}
+
+// Execute adds all child commands to the root command and sets flags appropriately.
+// This is called by main.main(). It only needs to happen once to the rootCmd.
+func Execute() {
+	err := rootCmd.Execute()
+	if err != nil {
+		os.Exit(1)
+	}
+}
+
+
+func init() {
+	cobra.OnInitialize(initConfig)
+
+
+}
+
+
+
+// initConfig reads in config file and ENV variables if set.
+func initConfig() {
+	viper.SetEnvPrefix(common.VEnvPrefix)
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_", "-", "_"))
+	viper.AutomaticEnv()
+
+	configFile := viper.GetString(common.VConfig)
+	if configFile != "" {
+		err := common.ValidateConfig(configFile)
+		if err != nil {
+			logger.Default().Error("Error validating config file", "cfgFile", configFile, "err", err)
+			os.Exit(1)
+		}
+		viper.SetConfigFile(configFile)
+	} else {
+		// Find home directory
+		home, err := os.UserHomeDir()
+		cobra.CheckErr(err)
+
+		// Search config in home directory
+		viper.AddConfigPath(home)
+		viper.SetConfigType("yaml")
+		viper.SetConfigName(common.VDefaultConfigName)
+	}
+
+	// If a config file is found, read it in.
+	err := viper.ReadInConfig()
+	if err == nil {
+		logger.Default().Info("Using config file", "cfgFile", viper.ConfigFileUsed())
+	} else if configFile == "" {
+		logger.Default().Info("Not using a config file")
+	} else {
+		logger.Default().Error("Error reading config file", "err", err)
+		logger.Default().Error("Use --help flag for more information")
+		os.Exit(1)
+	}
+}
+
+
+
+func preRun(cmd *cobra.Command, _ []string) error {
+	l, err := setupLogger(
+		viper.GetString(common.VLogLevel),
+		viper.GetString(common.VLogFormat),
+		!viper.GetBool(common.VNoColor),
+	)
+	if err != nil {
+		return err
+	}
+	ctx := logger.WithContext(cmd.Context(), l)
+	cmd.SetContext(ctx)
+	return nil
+}
+
+
+func setupLogger(level string, format string, color bool) (*slog.Logger, error) {
+	sLevel, err := logger.ParseLevel(level)
+	if err != nil {
+		return nil, err
+	}
+
+	cfg := logger.Config{
+		Level:       sLevel,
+		Format:      logger.Format(format),
+		Destination: logger.DestinationDefault,
+		Color:       logger.Color(color),
+	}
+	l, err := logger.New(cfg)
+	if err != nil {
+		return nil, err
+	}
+	logger.SetDefault(l)
+	l.Debug("logger successfully initialized", "cfg", cfg)
+	return l, nil
+}
