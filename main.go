@@ -35,6 +35,20 @@ func main() {
 func run() error {
  
 
+if cfg.URL == "" {
+	panic("TRIVY_DEPENDENCYTRACK_URL is required")
+}
+if cfg.APIKEY == "" {
+	panic("TRIVY_DEPENDENCYTRACK_APIKEY is required")
+}
+if cfg.BOM_FILE == "" {
+	panic("TRIVY_DEPENDENCYTRACK_BOM_FILE is required")
+}
+if cfg.PROJECT_NAME == "" {
+	panic("TRIVY_DEPENDENCYTRACK_PROJECTNAME is required")
+}
+
+
 client, _ := dtrack.NewClient(cfg.URL, dtrack.WithAPIKey(cfg.APIKEY))
 
 bomContent, err := os.ReadFile(cfg.BOM_FILE)
