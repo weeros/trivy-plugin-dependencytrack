@@ -11,6 +11,7 @@ import (
 
 	"os"
 	"encoding/base64"
+	"encoding/json"
 
 	"github.com/caarlos0/env/v11"
 	dtrack "github.com/DependencyTrack/client-go" 
@@ -54,7 +55,9 @@ if cfg.PROJECT_NAME == "" {
 	panic("TRIVY_DEPENDENCYTRACK_PROJECTNAME is required")
 }
 
-print(cfg)
+jcfg, _ := json.Marshal(cfg)
+fmt.Println(string(jcfg))
+
 
 client, _ := dtrack.NewClient(cfg.URL, dtrack.WithAPIKey(cfg.APIKEY))
 
