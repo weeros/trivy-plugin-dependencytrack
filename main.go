@@ -12,6 +12,7 @@ import (
 	"os"
 	"encoding/base64"
 
+	"github.com/caarlos0/env/v11"
 	dtrack "github.com/DependencyTrack/client-go" 
 )
 
@@ -34,6 +35,9 @@ func main() {
 
 func run() error {
  
+if err := env.Parse(&cfg); err != nil {
+	return err
+}
 
 if cfg.URL == "" {
 	panic("TRIVY_DEPENDENCYTRACK_URL is required")
