@@ -39,6 +39,8 @@ if err := env.Parse(&cfg); err != nil {
 	return err
 }
 
+
+// Validate required variables configuration
 if cfg.URL == "" {
 	panic("TRIVY_DEPENDENCYTRACK_URL is required")
 }
@@ -52,6 +54,7 @@ if cfg.PROJECT_NAME == "" {
 	panic("TRIVY_DEPENDENCYTRACK_PROJECTNAME is required")
 }
 
+print(cfg)
 
 client, _ := dtrack.NewClient(cfg.URL, dtrack.WithAPIKey(cfg.APIKEY))
 
