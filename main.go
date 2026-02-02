@@ -73,7 +73,7 @@ uploadToken, err := client.BOM.Upload(context.TODO(), dtrack.BOMUploadRequest{
 	BOM:            base64.StdEncoding.EncodeToString(bomContent),
 })
 if err != nil {
-	panic(err)
+	panic("Upload: " + err.Error())
 }
 
 var (
