@@ -18,8 +18,8 @@ import (
 )
 
 type Config struct {
-    URL    string `env:"TRIVY_DEPENDENCYTRACK_URL" localhost:"8081"`
-    APIKEY   string `env:"TRIVY_DEPENDENCYTRACK_APIKEY" envDefault:"xxxxxxxxx"`
+    URL    string `env:"TRIVY_DEPENDENCYTRACK_URL" envDefault:"http://localhost:8081"`
+    APIKEY   string `env:"TRIVY_DEPENDENCYTRACK_APIKEY" envDefault:""`
     PROJECT_NAME  string `env:"TRIVY_DEPENDENCYTRACK_PROJECTNAME" envDefault:""`
     PROJECT_VERSION  string `env:"TRIVY_DEPENDENCYTRACK_PROJECTVERSION" envDefault:""`
     AUTOCREATE bool `env:"TRIVY_DEPENDENCYTRACK_PROJECTAUTOCREATE" envDefault:"false"`
