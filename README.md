@@ -24,3 +24,10 @@ go get -u
 ```
 GOPROXY=https://proxy.golang.org go mod tidy
 ````
+
+
+```
+go build -o dependencytrack -buildmode=c-shared main.go 
+cp dependencytrack ~/.trivy/plugins/dependencytrack
+
+```

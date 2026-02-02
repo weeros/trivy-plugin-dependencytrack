@@ -63,7 +63,7 @@ client, _ := dtrack.NewClient(cfg.URL, dtrack.WithAPIKey(cfg.APIKEY))
 
 bomContent, err := os.ReadFile(cfg.BOM_FILE)
 if err != nil {
-	panic(err)
+	panic("readfile: " + err.Error())
 }
 
 uploadToken, err := client.BOM.Upload(context.TODO(), dtrack.BOMUploadRequest{
