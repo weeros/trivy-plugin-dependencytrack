@@ -38,16 +38,16 @@ Log format [console, json, dev, none]`
 	VNoColor        = "no-color"
 	VNoColorLong    = "no-color"
 	VNoColorDefault = false
-	VNoColorUsage   = `Env: TRIVY_PLUGIN_ZARF_NO_COLOR
+	VNoColorUsage   = `Env: TRIVY_PLUGIN_DEPENDENCYTRACK_NO_COLOR
 CfgFile: no-color
 Disable colorized output`
 
 
-	VUrl        = "url"
-	VUrlLong    = "url"
-	VUrlDefault = "http://localhost:8081"
-	VUrlUsage   = `Env: TRIVY_PLUGIN_DEPENDENCYTRACK_URL
-CfgFile: url
+	VUrlApi        = "url-api"
+	VUrlApiLong    = "url-api"
+	VUrlApiDefault = "http://localhost:8081"
+	VUrlApiUsage   = `Env: TRIVY_PLUGIN_DEPENDENCYTRACK_URL_API
+CfgFile: url-api
 DependencyTrack URL`
 
 	VApiKey        = "apikey"
@@ -84,6 +84,29 @@ Auto-create project if it doesn't exist`
 	VBomFileUsage   = `Env: TRIVY_PLUGIN_DEPENDENCYTRACK_BOM_FILE
 CfgFile: bom-file
 DependencyTrack BOM File`
+
+	VGitlabBranch        = "gitlab-branch"
+	VGitlabBranchLong    = "gitlab-branch"
+	VGitlabBranchDefault = true
+	VGitlabBranchUsage   = `Env: TRIVY_PLUGIN_DEPENDENCYTRACK_GITLAB_BRANCH
+CfgFile: gitlab-branch
+GitLab Branch`
+
+	VGitlabTag        = "gitlab-tag"
+	VGitlabTagLong    = "gitlab-tag"
+	VGitlabTagDefault = true
+	VGitlabTagUsage   = `Env: TRIVY_PLUGIN_DEPENDENCYTRACK_GITLAB_TAG
+CfgFile: gitlab-tag
+GitLab Tag`
+
+	VGitlabMR        = "gitlab-mr"
+	VGitlabMRLong    = "gitlab-mr"
+	VGitlabMRDefault = false
+	VGitlabMRUsage   = `Env: TRIVY_PLUGIN_DEPENDENCYTRACK_GITLAB_MR
+CfgFile: gitlab-mr
+GitLab Merge Request`
+
+
 )
 
 func ValidateConfig(configPath string) error {

@@ -25,6 +25,7 @@ func NewRootCommand() *cobra.Command {
 	}
 
 	cmd.AddCommand(NewUploadCommand())
+	cmd.AddCommand(NewUploadGitlabCommand())
 
 	return cmd
 }

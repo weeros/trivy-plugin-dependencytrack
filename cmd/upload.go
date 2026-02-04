@@ -19,48 +19,50 @@ import (
 
 func NewUploadCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:           "upload [flags] packageRef",
+		Use:           "upload [flags]",
 		Short:         "Upload a DependencyTrack package",
 		SilenceUsage:  false,
 		SilenceErrors: false,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			url := viper.GetString(common.VUrl)
-			token := viper.GetString(common.VApiKey)
+			urlApi := viper.GetString(common.VUrlApi)
+			apikey := viper.GetString(common.VApiKey)
 			ProjectName := viper.GetString(common.VProjectName)
 			ProjectVersion := viper.GetString(common.VProjectVersion)
 			AutoCreate := viper.GetBool(common.VAutoCreate)
 			BomFile := viper.GetString(common.VBomFile)
-			err := upload(url, token, ProjectName, ProjectVersion, AutoCreate, BomFile)
+			gitlabBranch := viper.GetBool(common.VGitlabBranch)
+			gitlabTag := viper.GetBool(common.VGitlabTag)
+			gitlabMR := viper.GetBool(common.VGitlabMR)
+			err := upload(urlApi, apikey, ProjectName, ProjectVersion, AutoCreate, BomFile, gitlabBranch, gitlabTag, gitlabMR, false)
 			if err != nil {
-				logger.Default().Error("Error uploadning DependencyTrack package", "error", err)
+				logger.Default().Error("Error uploading DependencyTrack sbom", "error", err)
 				return err
 			}
 			return nil
 		},
 		Example: `
-# Upload a local dependencytrack package:
-trivy dependencytrack upload dependencytrack-package-foo-amd64-1.2.3.tar.zst
+# Upload a local dependencytrack sbom:
+trivy dependencytrack upload --url-api http://dependencytrack.local:8081 --apikey <API_KEY> --project-name my-project --project-version 1.0.0 --bom-file ./sbom.json
 
-# Upload a package directly from an OCI registry:
-trivy dependencytrack upload oci://registry.example.com/path/to/foo:1.2.3
 
-# Use a mirrored vulnerability database:
-trivy dependencytrack upload --db-repository=https://registry.example.com/trivy-db oci://registry.example.com/path/to/foo:1.2.3`,
+
+export TRIVY_PLUGIN_DEPENDENCYTRACK_URL=http://localhost:8081
+export TRIVY_PLUGIN_DEPENDENCYTRACK_APIKEY=<API_KEY>
+export TRIVY_PLUGIN_DEPENDENCYTRACK_BOM_FILE=result.json
+export TRIVY_PLUGIN_DEPENDENCYTRACK_AUTOCREATE=true
+export TRIVY_PLUGIN_DEPENDENCYTRACK_PROJECT_NAME=my-project
+export TRIVY_PLUGIN_DEPENDENCYTRACK_PROJECT_VERSION=1.0.0
+trivy dependencytrack upload 
+`,
 	}
 
-	cmd.Flags().String(common.VUrl, common.VUrlDefault, common.VUrlUsage)
-	err := viper.BindPFlag(common.VUrl, cmd.Flags().Lookup(common.VUrlLong))
+	cmd.Flags().String(common.VUrlApi, common.VUrlApiDefault, common.VUrlApiUsage)
+	err := viper.BindPFlag(common.VUrlApi, cmd.Flags().Lookup(common.VUrlApiLong))
 	if err != nil {
 		logger.Default().Error("Error binding flag to viper", "error", err)
 		os.Exit(1)
 	}
 
-	cmd.Flags().String(common.VApiKey, common.VApiKeyDefault, common.VApiKeyUsage)
-	err = viper.BindPFlag(common.VApiKey, cmd.Flags().Lookup(common.VApiKeyLong))
-	if err != nil {
-		logger.Default().Error("Error binding flag to viper", "error", err)
-		os.Exit(1)
-	}
 
 	cmd.Flags().String(common.VProjectName, common.VProjectNameDefault, common.VProjectNameUsage)
 	err = viper.BindPFlag(common.VProjectName, cmd.Flags().Lookup(common.VProjectNameLong))
@@ -96,13 +98,51 @@ trivy dependencytrack upload --db-repository=https://registry.example.com/trivy-
 
 
 
-func upload(url string, token string, projectName string, projectVersion string, autoCreate bool, bomFile string) error {
+func upload(url string, apikey string, projectName string, projectVersion string, autoCreate bool, bomFile string, gitlabBranch bool, gitlabTag bool, gitlabMR bool, gitlabMode bool) error {
  
-	client, _ := dtrack.NewClient(url, dtrack.WithAPIKey(token))
+	if url == "" {
+		err := fmt.Errorf("dependencytrack url-api is required")
+		logger.Default().Error("Error validating dependencytrack url-api", "error", err)
+		return err
+	}
+	
+	if apikey == "" {
+		err := fmt.Errorf("dependencytrack apikey is required")
+		logger.Default().Error("Error validating dependencytrack apikey", "error", err)
+		return err
+	}
+	
+	client, _ := dtrack.NewClient(url, dtrack.WithAPIKey(apikey))
 
 	bomContent, err := os.ReadFile(bomFile)
 	if err != nil {
-		panic("readfile: " + err.Error())
+		logger.Default().Error("Error reading dependencytrack bom file", "error", err.Error())
+		return err
+	}
+
+
+	if gitlabMode == true {
+		projectName, projectVersion = gitlabGenerateProjectInfo(projectName, projectVersion, gitlabBranch, gitlabTag, gitlabMR)
+	}
+	
+
+	if projectName == "" {
+		err := fmt.Errorf("dependencytrack project-name is required")
+		logger.Default().Error("Error missing dependencytrack project-name", "error", err)
+		return err
+	}
+
+
+	if projectVersion == "" {
+		err := fmt.Errorf("dependencytrack project-version is required")
+		logger.Default().Error("Error missing dependencytrack project-version", "error", err)
+		return err
+	}
+	
+	if bomFile == "" {
+		err := fmt.Errorf("dependencytrack bom-file is required")
+		logger.Default().Error("Error missing dependencytrack bom-file", "error", err)
+		return err
 	}
 
 	uploadToken, err := client.BOM.Upload(context.TODO(), dtrack.BOMUploadRequest{
@@ -112,7 +152,8 @@ func upload(url string, token string, projectName string, projectVersion string,
 		BOM:            base64.StdEncoding.EncodeToString(bomContent),
 	})
 	if err != nil {
-		panic("Upload: " + err.Error())
+		logger.Default().Error("Error uploading dependencytrack bom file", "error", err.Error())
+		return err
 	}
 
 	var (
@@ -121,7 +162,7 @@ func upload(url string, token string, projectName string, projectVersion string,
 		ticker   = time.NewTicker(1 * time.Second)
 		timeout  = time.After(30 * time.Second)
 	)
-
+	
 	go func() {
 		defer func() {
 			close(doneChan)
@@ -137,6 +178,7 @@ func upload(url string, token string, projectName string, projectVersion string,
 					return
 				}
 				if !processing {
+					
 					doneChan <- struct{}{}
 					return
 				}
@@ -158,4 +200,3 @@ func upload(url string, token string, projectName string, projectVersion string,
 
 	return nil
 }
-
