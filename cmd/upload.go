@@ -63,6 +63,12 @@ trivy dependencytrack upload
 		os.Exit(1)
 	}
 
+	cmd.Flags().String(common.VApiKey, common.VApiKeyDefault, common.VApiKeyUsage)
+	err = viper.BindPFlag(common.VApiKey, cmd.Flags().Lookup(common.VApiKeyLong))
+	if err != nil {
+		logger.Default().Error("Error binding flag to viper", "error", err)
+		os.Exit(1)
+	}
 
 	cmd.Flags().String(common.VProjectName, common.VProjectNameDefault, common.VProjectNameUsage)
 	err = viper.BindPFlag(common.VProjectName, cmd.Flags().Lookup(common.VProjectNameLong))
