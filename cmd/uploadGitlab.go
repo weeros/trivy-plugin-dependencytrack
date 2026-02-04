@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"os"
-
+	"fmt"
 	"github.com/weeros/trivy-plugin-dependencytrack/cmd/common"
 	"github.com/weeros/trivy-plugin-dependencytrack/pkg/logger"
 
@@ -14,7 +14,7 @@ import (
 func NewUploadGitlabCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:           "upload-gitlab [flags]",
-		Short:         "Upload a DependencyTrack package",
+		Short:         "Upload a sbom to DependencyTrack in GitLab CI context",
 		SilenceUsage:  false,
 		SilenceErrors: false,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -22,10 +22,22 @@ func NewUploadGitlabCommand() *cobra.Command {
 			apikey := viper.GetString(common.VApiKey)
 			AutoCreate := viper.GetBool(common.VAutoCreate)
 			BomFile := viper.GetString(common.VBomFile)
+			ProjectName := viper.GetString(common.VProjectName)
+			ProjectVersion := viper.GetString(common.VProjectVersion)
 			gitlabBranch := viper.GetBool(common.VGitlabBranch)
 			gitlabTag := viper.GetBool(common.VGitlabTag)
 			gitlabMR := viper.GetBool(common.VGitlabMR)
-			err := upload(urlApi, apikey, "", "", AutoCreate, BomFile, gitlabBranch, gitlabTag, gitlabMR, true)
+			ProjectName, ProjectVersion, err := validationGitlab(ProjectName, ProjectVersion, gitlabBranch, gitlabTag, gitlabMR)
+			if err != nil {
+				logger.Default().Error("Error validating GitLab context", "error", err)
+				return nil
+			}
+			err = validationFields(urlApi, apikey, ProjectName, ProjectVersion, BomFile)
+			if err != nil {
+				logger.Default().Error("Error validating fields", "error", err)
+				return nil
+			}
+			err = upload(urlApi, apikey, ProjectName, ProjectVersion, AutoCreate, BomFile)
 			if err != nil {
 				logger.Default().Error("Error uploading DependencyTrack sbom", "error", err)
 				return err
@@ -78,24 +90,23 @@ trivy dependencytrack upload-gitlab
 	return cmd
 }
 
-
-
-
-func gitlabGenerateProjectInfo(projectName, projectVersion string, gitlabBranch, gitlabTag, gitlabMR bool) (string, string) {
-
+func validationGitlab(projectName, projectVersion string, gitlabBranch, gitlabTag, gitlabMR bool) (string, string, error) {
 	if os.Getenv("CI_MERGE_REQUEST_IID") != "" && gitlabMR == false {
-		logger.Default().Info("Running in GitLab Merge Request context")
-		return	"", ""
+		err := fmt.Errorf("Merge Request context not allowed")
+		logger.Default().Error("Abort Import - Running in GitLab Merge Request context not allowed")
+		return	"", "", err
 	}
 
 	if os.Getenv("CI_COMMIT_BRANCH") != "" && gitlabBranch == false {
-		logger.Default().Info("Running in GitLab Branch context")
-		return "", ""
+		err := fmt.Errorf("Branch context not allowed")
+		logger.Default().Error("Abort Import - Running in GitLab Branch context not allowed")
+		return "", "", err
 	}
 	
 	if os.Getenv("CI_COMMIT_TAG") != "" && gitlabTag == false {
-		logger.Default().Info("Running in GitLab Tag context")
-		return "", ""
+		err := fmt.Errorf("Tag context not allowed")
+		logger.Default().Error("Abort Import - Running in GitLab Tag context not allowed")
+		return "", "", err
 	}
 
 	if projectName == "" {
@@ -106,6 +117,10 @@ func gitlabGenerateProjectInfo(projectName, projectVersion string, gitlabBranch,
 		projectVersion = os.Getenv("CI_COMMMIT_REF_NAME")
 	}
 
-	return projectName, projectVersion
+	return projectName, projectVersion, nil
 }
+
+
+
+
 

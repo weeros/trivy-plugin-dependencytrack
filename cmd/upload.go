@@ -20,7 +20,7 @@ import (
 func NewUploadCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:           "upload [flags]",
-		Short:         "Upload a DependencyTrack package",
+		Short:         "Upload a sbom to DependencyTrack",
 		SilenceUsage:  false,
 		SilenceErrors: false,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -30,12 +30,14 @@ func NewUploadCommand() *cobra.Command {
 			ProjectVersion := viper.GetString(common.VProjectVersion)
 			AutoCreate := viper.GetBool(common.VAutoCreate)
 			BomFile := viper.GetString(common.VBomFile)
-			gitlabBranch := viper.GetBool(common.VGitlabBranch)
-			gitlabTag := viper.GetBool(common.VGitlabTag)
-			gitlabMR := viper.GetBool(common.VGitlabMR)
-			err := upload(urlApi, apikey, ProjectName, ProjectVersion, AutoCreate, BomFile, gitlabBranch, gitlabTag, gitlabMR, false)
+			err := validationFields(urlApi, apikey, ProjectName, ProjectVersion, BomFile)
 			if err != nil {
-				logger.Default().Error("Error uploading DependencyTrack sbom", "error", err)
+				logger.Default().Error("Error validating fields", "error", err)
+				return nil
+			}
+			err = upload(urlApi, apikey, ProjectName, ProjectVersion, AutoCreate, BomFile)
+			if err != nil {
+				logger.Default().Error("Error during uploading sbom", "error", err)
 				return err
 			}
 			return nil
@@ -43,8 +45,6 @@ func NewUploadCommand() *cobra.Command {
 		Example: `
 # Upload a local dependencytrack sbom:
 trivy dependencytrack upload --url-api http://dependencytrack.local:8081 --apikey <API_KEY> --project-name my-project --project-version 1.0.0 --bom-file ./sbom.json
-
-
 
 export TRIVY_PLUGIN_DEPENDENCYTRACK_URL=http://localhost:8081
 export TRIVY_PLUGIN_DEPENDENCYTRACK_APIKEY=<API_KEY>
@@ -92,56 +92,18 @@ trivy dependencytrack upload
 		os.Exit(1)
 	}
 
-
 	return cmd
 }
 
 
 
-func upload(url string, apikey string, projectName string, projectVersion string, autoCreate bool, bomFile string, gitlabBranch bool, gitlabTag bool, gitlabMR bool, gitlabMode bool) error {
- 
-	if url == "" {
-		err := fmt.Errorf("dependencytrack url-api is required")
-		logger.Default().Error("Error validating dependencytrack url-api", "error", err)
-		return err
-	}
-	
-	if apikey == "" {
-		err := fmt.Errorf("dependencytrack apikey is required")
-		logger.Default().Error("Error validating dependencytrack apikey", "error", err)
-		return err
-	}
-	
-	client, _ := dtrack.NewClient(url, dtrack.WithAPIKey(apikey))
+func upload(urlApi string, apikey string, projectName string, projectVersion string, autoCreate bool, bomFile string) error {
+ 	
+	client, _ := dtrack.NewClient(urlApi, dtrack.WithAPIKey(apikey))
 
 	bomContent, err := os.ReadFile(bomFile)
 	if err != nil {
 		logger.Default().Error("Error reading dependencytrack bom file", "error", err.Error())
-		return err
-	}
-
-
-	if gitlabMode == true {
-		projectName, projectVersion = gitlabGenerateProjectInfo(projectName, projectVersion, gitlabBranch, gitlabTag, gitlabMR)
-	}
-	
-
-	if projectName == "" {
-		err := fmt.Errorf("dependencytrack project-name is required")
-		logger.Default().Error("Error missing dependencytrack project-name", "error", err)
-		return err
-	}
-
-
-	if projectVersion == "" {
-		err := fmt.Errorf("dependencytrack project-version is required")
-		logger.Default().Error("Error missing dependencytrack project-version", "error", err)
-		return err
-	}
-	
-	if bomFile == "" {
-		err := fmt.Errorf("dependencytrack bom-file is required")
-		logger.Default().Error("Error missing dependencytrack bom-file", "error", err)
 		return err
 	}
 
@@ -189,8 +151,6 @@ func upload(url string, apikey string, projectName string, projectVersion string
 		}
 	}()
 
-		
-
 	select {
 	case <-doneChan:
 		fmt.Println("bom processing completed")
@@ -200,3 +160,45 @@ func upload(url string, apikey string, projectName string, projectVersion string
 
 	return nil
 }
+
+
+
+func validationFields(urlApi string, apikey string, projectName string, projectVersion string, bomFile string) (error) {
+
+	if urlApi == "" {
+		err := fmt.Errorf("dependencytrack url-api is required")
+		logger.Default().Error("Error validating dependencytrack url-api", "error", err)
+		return err
+	}
+	
+	if apikey == "" {
+		err := fmt.Errorf("dependencytrack apikey is required")
+		logger.Default().Error("Error validating dependencytrack apikey", "error", err)
+		return err
+	}
+
+	if projectName == "" {
+		err := fmt.Errorf("dependencytrack Project Name is required")
+		logger.Default().Error("Error missing dependencytrack Project Name", "error", err)
+		return err
+	}
+
+	if projectVersion == "" {
+		err := fmt.Errorf("dependencytrack Project Version is required")
+		logger.Default().Error("Error missing dependencytrack Project Version", "error", err)
+		return err
+	}
+	
+	if bomFile == "" {
+		err := fmt.Errorf("dependencytrack Sbom-file is required")
+		logger.Default().Error("Error missing dependencytrack Sbom-file", "error", err)
+		return err
+	}
+
+	return nil
+}
+
+
+
+
+

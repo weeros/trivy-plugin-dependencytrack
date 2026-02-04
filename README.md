@@ -28,6 +28,6 @@ GOPROXY=https://proxy.golang.org go mod tidy
 
 ```
 mkdir -p ~/.trivy/plugins/dependencytrack
-CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o dependencytrack  main.go 
+CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ~/.trivy/plugins/dependencytrack/dependencytrack  main.go 
 cp dependencytrack ~/.trivy/plugins/dependencytrack
 ```

@@ -43,9 +43,34 @@ func Execute() {
 func init() {
 	cobra.OnInitialize(initConfig)
 
+	rootCmd.PersistentFlags().StringP(common.VConfigLong, common.VConfigShort, common.VConfigDefault, common.VConfigUsage)
+	err := viper.BindPFlag(common.VConfig, rootCmd.PersistentFlags().Lookup(common.VConfigLong))
+	if err != nil {
+		logger.Default().Error("Error binding flag to viper", "error", err)
+		os.Exit(1)
+	}
 
+	rootCmd.PersistentFlags().StringP(common.VLogLevelLong, common.VLogLevelShort, common.VLogLevelDefault, common.VLogLevelUsage)
+	err = viper.BindPFlag(common.VLogLevel, rootCmd.PersistentFlags().Lookup(common.VLogLevelLong))
+	if err != nil {
+		logger.Default().Error("Error binding flag to viper", "error", err)
+		os.Exit(1)
+	}
+
+	rootCmd.PersistentFlags().String(common.VLogFormatLong, common.VLogFormatDefault, common.VLogFormatUsage)
+	err = viper.BindPFlag(common.VLogFormat, rootCmd.PersistentFlags().Lookup(common.VLogFormatLong))
+	if err != nil {
+		logger.Default().Error("Error binding flag to viper", "error", err)
+		os.Exit(1)
+	}
+
+	rootCmd.PersistentFlags().Bool(common.VNoColorLong, common.VNoColorDefault, common.VNoColorUsage)
+	err = viper.BindPFlag(common.VNoColor, rootCmd.PersistentFlags().Lookup(common.VNoColorLong))
+	if err != nil {
+		logger.Default().Error("Error binding flag to viper", "error", err)
+		os.Exit(1)
+	}
 }
-
 
 
 // initConfig reads in config file and ENV variables if set.
